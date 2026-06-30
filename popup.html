@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --green: #128c7e;
+        --green-2: #0e7568;
+        --bg: Canvas;
+        --muted: color-mix(in srgb, CanvasText 55%, transparent);
+        --line: color-mix(in srgb, CanvasText 14%, transparent);
+        --card: color-mix(in srgb, CanvasText 5%, transparent);
+        --ok: #1aa179;
+        --err: #d14343;
+        --warn: #c98a00;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        width: 340px;
+        margin: 0;
+        padding: 14px;
+        font-size: 13px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      header img { width: 22px; height: 22px; border-radius: 5px; }
+      header h1 { font-size: 14px; margin: 0; flex: 1; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--muted);
+      }
+      .badge .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--muted);
+      }
+      .badge.online .dot { background: var(--ok); }
+      .badge.waiting .dot { background: var(--warn); }
+      .badge.offline .dot { background: var(--err); }
+
+      button {
+        display: block;
+        width: 100%;
+        padding: 9px 10px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid var(--green);
+        border-radius: 7px;
+        background: var(--green);
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      button:hover:not(:disabled) { background: var(--green-2); }
+      button.secondary { background: transparent; color: var(--green); }
+      button.secondary:hover:not(:disabled) { background: var(--card); }
+      button.ghost {
+        background: transparent; color: CanvasText;
+        border-color: var(--line); font-weight: 500;
+      }
+      button.ghost:hover:not(:disabled) { background: var(--card); }
+      button:disabled { opacity: 0.45; cursor: default; }
+
+      details {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+      }
+      details summary {
+        cursor: pointer; font-size: 12px; font-weight: 600;
+        color: var(--muted); list-style: none;
+      }
+      details[open] summary { margin-bottom: 8px; }
+      .row { display: flex; gap: 6px; }
+      input, select {
+        width: 100%;
+        margin-bottom: 6px;
+        padding: 7px 8px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: CanvasText;
+      }
+      select { width: auto; }
+
+      #card {
+        display: none;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: var(--card);
+      }
+      #card.show { display: block; }
+      .kv { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+      .kv .k { color: var(--muted); }
+      .kv .v { font-weight: 600; text-align: right; word-break: break-all; }
+      .checks { margin: 8px 0; display: grid; gap: 3px; }
+      .chk { display: flex; align-items: center; gap: 6px; }
+      .chk .ic { width: 14px; text-align: center; font-weight: 700; }
+      .chk.yes .ic { color: var(--ok); }
+      .chk.no .ic { color: var(--err); }
+      .warn-line { color: var(--warn); font-size: 11px; margin-top: 6px; }
+
+      #status {
+        font-size: 11.5px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: var(--muted);
+        margin-top: 4px;
+        max-height: 120px;
+        overflow: auto;
+      }
+      #status.err { color: var(--err); }
+      #status.ok { color: var(--ok); }
+      .spin {
+        display: inline-block; width: 11px; height: 11px;
+        border: 2px solid var(--line); border-top-color: var(--green);
+        border-radius: 50%; animation: sp 0.7s linear infinite;
+        vertical-align: -1px; margin-right: 5px;
+      }
+      @keyframes sp { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="icons/icon48.png" alt="" />
+      <h1>WA Web Dump</h1>
+      <span id="badge" class="badge"><span class="dot"></span><span id="badgeText">…</span></span>
+    </header>
+
+    <button id="open" class="secondary">Abrir / focar WhatsApp Web</button>
+    <button id="dump">Fazer dump &amp; baixar JSON</button>
+
+    <div id="card">
+      <div class="kv"><span class="k">regId</span><span class="v" id="rRegId">—</span></div>
+      <div class="kv"><span class="k">meJid</span><span class="v" id="rJid">—</span></div>
+      <div class="checks" id="rChecks"></div>
+      <div class="warn-line" id="rWarn" style="display:none"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="copy" class="ghost" style="margin:0">Copiar JSON</button>
+        <button id="redownload" class="ghost" style="margin:0">Baixar de novo</button>
+      </div>
+    </div>
+
+    <details id="apiBox">
+      <summary>Enviar para uma API REST</summary>
+      <input id="endpoint" type="url" placeholder="https://sua-api.com/wa/import" />
+      <input id="authHeader" type="text" placeholder="Authorization: Bearer xxx (opcional)" />
+      <div class="row">
+        <select id="method">
+          <option>POST</option>
+          <option>PUT</option>
+        </select>
+        <button id="send" style="margin:0">Dump &amp; enviar</button>
+      </div>
+    </details>
+
+    <div id="status">Verificando o WhatsApp Web…</div>
+    <script src="popup.js"></script>
+  </body>
+</html>
