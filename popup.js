@@ -294,6 +294,30 @@ function originPattern(urlStr) {
   return `${u.protocol}//${u.host}/*`
 }
 
+const delay = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * POST/PUT com retry. Logo apos conceder a permissao de host pela primeira
+ * vez, o primeiro fetch costuma falhar com "Failed to fetch" porque a
+ * permissao ainda nao propagou na camada de rede — por isso tentamos de novo
+ * com backoff em vez de exigir um segundo clique.
+ */
+async function sendWithRetry(endpoint, opts, attempts = 4) {
+  let lastErr
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetch(endpoint, opts)
+    } catch (e) {
+      lastErr = e // TypeError de rede — provavel propagacao da permissao
+      if (i < attempts - 1) {
+        setBusy('Conexao ainda propagando, tentando de novo (' + (i + 2) + '/' + attempts + ')…')
+        await delay(300 * (i + 1))
+      }
+    }
+  }
+  throw lastErr
+}
+
 $('send').addEventListener('click', async () => {
   const btn = $('send')
   const endpoint = $('endpoint').value.trim()
@@ -338,7 +362,7 @@ $('send').addEventListener('click', async () => {
       }
     }
 
-    const resp = await fetch(endpoint, { method, headers, body: result.json })
+    const resp = await sendWithRetry(endpoint, { method, headers, body: result.json })
     const text = await resp.text().catch(() => '')
     if (!resp.ok) {
       setStatus('API respondeu HTTP ' + resp.status + ':\n' + text.slice(0, 500), 'err')
